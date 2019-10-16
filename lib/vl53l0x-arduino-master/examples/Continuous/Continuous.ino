@@ -1,5 +1,3 @@
-// Urna 2.0 
-#include <Arduino.h>
 /* This example shows how to use continuous mode to take
 range measurements with the VL53L0X. It is based on
 vl53l0x_ContinuousRanging_Example.c from the VL53L0X API.
