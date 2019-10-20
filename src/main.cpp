@@ -24,7 +24,13 @@
 //
   #define releUpPin 4
   #define releDownPin 5
-  #define concPin 6
+  #define concDownPin 6
+  #define concUpPin   7
+
+  bool concDown = LOW;
+  bool concUp   = LOW;
+  int concState = 0;
+  int motor = 0;
 
   int range = 0; //храним расстояние
   #define constRange 100 //мм  расстояние сработки
@@ -61,7 +67,8 @@ void setup()
   pinMode(releUpPin,   OUTPUT);
   pinMode(releDownPin, OUTPUT);
 
-  pinMode(concPin,      INPUT);
+  pinMode(concDownPin,  INPUT);
+  pinMode(concUpPin,    INPUT);
 
 }
 
@@ -72,6 +79,14 @@ void loop()
   Serial.println();
 
   range = sensor.readRangeSingleMillimeters();
+
+  concDown = digitalRead(concDownPin);
+  concUp   = digitalRead(concUpPin);
+  if     (concDown==LOW  && concUp==LOW ) concState=0; // неисправность (оба концевика видят свое активное положение)
+  else if(concDown==HIGH && concUp==LOW ) concState=1; // открыта
+  else if(concDown==LOW  && concUp==HIGH) concState=2; // закрыта
+  else if(concDown==HIGH && concUp==HIGH) concState=3; // промежуточное положение крышки
+  else                                    concState=4; // неисправность
 
   if(range < constRange){
     open = true;
@@ -84,6 +99,56 @@ void loop()
   }
 
   if(open == true){
-    
+    switch (concState){
+      case 0:
+
+        break;
+      case 1: // открыта
+        // ничего не делаем
+        break;
+      case 2: // закрыта
+        motor = 1; // включить мотор ВВЕРХ
+        break;
+      case 3: // промежуточное положение
+
+        break;
+      case 4:
+
+        break;
+    }
+  }
+  else { //open == false
+    switch (concState){
+      case 0:
+
+        break;
+      case 1: // открыта
+        motor = 2; // включить мотор ВНИЗ
+        break;
+      case 2: // закрыта
+        // ничео не делаем
+        break;
+      case 3: // промежуточное положение
+
+        break;
+      case 4:
+
+        break;
+    }
+  }
+
+  switch (motor){
+    case 0: // выключить мотор
+      digitalWrite(releUpPin,   LOW);
+      digitalWrite(releDownPin, LOW);
+      break;
+    case 1: // включить мотор вверх
+      digitalWrite(releUpPin,  HIGH);
+      digitalWrite(releDownPin, LOW);
+      break;
+    case 2: // включить мотор вниз
+      digitalWrite(releUpPin,   LOW);
+      digitalWrite(releDownPin,HIGH);
+      break;
   }
 }
