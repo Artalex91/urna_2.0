@@ -31,6 +31,8 @@
   bool concUp   = LOW;
   int concState = 0;
   int motor = 0;
+  uint32_t releUpMill   = 0;
+  uint32_t releDownMill = 0;
 
   int range = 0; //храним расстояние
   #define constRange 100 //мм  расстояние сработки
@@ -82,73 +84,87 @@ void loop()
 
   concDown = digitalRead(concDownPin);
   concUp   = digitalRead(concUpPin);
-  if     (concDown==LOW  && concUp==LOW ) concState=0; // неисправность (оба концевика видят свое активное положение)
-  else if(concDown==HIGH && concUp==LOW ) concState=1; // открыта
-  else if(concDown==LOW  && concUp==HIGH) concState=2; // закрыта
-  else if(concDown==HIGH && concUp==HIGH) concState=3; // промежуточное положение крышки
-  else                                    concState=4; // неисправность
+  if     (                                  concState!=0) concState=0; // ждем изменений
+  else if(concDown==HIGH && concUp==LOW  && concState!=1) concState=1; // открыта
+  else if(concDown==LOW  && concUp==HIGH && concState!=2) concState=2; // закрыта
+  else if(concDown==HIGH && concUp==HIGH && concState!=3) concState=3; // промежуточное положение крышки
+  else if(concDown==LOW  && concUp==LOW  && concState!=4) concState=4; // неисправность (оба концевика видят свое активное положение)
 
-  if(range < constRange){
+  if(range < constRange) openMill = millis();
+  if(range < constRange && open != true){
     open = true;
+    motor = 1;
     openMill = millis();
   }
-  else{
+  else if(range > constRange && open != false){
     if(millis() - openMill > constOpenMill){
       open = false;
+      motor = 2;
     }
   }
 
   if(open == true){
     switch (concState){
       case 0:
-
+        // ждем изменений
         break;
       case 1: // открыта
-        // ничего не делаем
+        motor = 3; //остановить мотор
         break;
       case 2: // закрыта
         motor = 1; // включить мотор ВВЕРХ
         break;
       case 3: // промежуточное положение
-
+        // ждем
         break;
-      case 4:
-
+      case 4: // неисправность
+        motor = 3; //остановить мотор
         break;
     }
   }
   else { //open == false
     switch (concState){
       case 0:
-
+        // ждем изменений
         break;
       case 1: // открыта
         motor = 2; // включить мотор ВНИЗ
         break;
       case 2: // закрыта
-        // ничео не делаем
+        motor = 3; // остановить мотор
         break;
       case 3: // промежуточное положение
-
+        motor = 2; // включить мотор ВНИЗ
         break;
-      case 4:
-
+      case 4: // неисправность
+        motor = 3; // остановить мотор
         break;
     }
   }
 
   switch (motor){
-    case 0: // выключить мотор
-      digitalWrite(releUpPin,   LOW);
-      digitalWrite(releDownPin, LOW);
+    case 0:
+      // ждем изменений
       break;
     case 1: // включить мотор вверх
       digitalWrite(releUpPin,  HIGH);
       digitalWrite(releDownPin, LOW);
+      releUpMill = millis();
+      motor = 0;
       break;
     case 2: // включить мотор вниз
       digitalWrite(releUpPin,   LOW);
       digitalWrite(releDownPin,HIGH);
+      releDownMill = millis();
+      motor = 0;
+      break;
+    case 3: // выключить мотор
+      digitalWrite(releUpPin,   LOW);
+      digitalWrite(releDownPin, LOW);
+      motor = 0;
       break;
   }
+
+  //if(millis()-releUpMill   > 1000) motor = 3;
+  //(millis()-releDownMill > 1000) motor = 3;
 }
