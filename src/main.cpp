@@ -30,6 +30,7 @@
   bool concDown = LOW;
   bool concUp   = LOW;
   int concState = 0;
+  int motorState = 0;
   int motor = 0;
   uint32_t releUpMill   = 0;
   uint32_t releDownMill = 0;
@@ -90,62 +91,50 @@ void loop()
   else if(concDown==HIGH && concUp==HIGH && concState!=3) concState=3; // промежуточное положение крышки
   else if(concDown==LOW  && concUp==LOW  && concState!=4) concState=4; // неисправность (оба концевика видят свое активное положение)
 
+       if(releUpPin==HIGH && releDownPin==LOW  && motorState!=1) motorState=1; //движение ВВЕРХ
+  else if(releUpPin==LOW  && releDownPin==HIGH && motorState!=2) motorState=2; //движение ВНИЗ
+  else if(releUpPin==LOW  && releDownPin==LOW  && motorState!=3) motorState=3; //ОСТАНОВЛЕН
+  else if(releUpPin==HIGH && releDownPin==HIGH && motorState!=4) motorState=4; //ошибка
+
   if(range < constRange) openMill = millis();
   if(range < constRange && open != true){
     open = true;
-    motor = 1;
-    openMill = millis();
   }
-  else if(range > constRange && open != false){
+  else if(range >= constRange && open != false){
     if(millis() - openMill > constOpenMill){
       open = false;
-      motor = 2;
     }
   }
 
   if(open == true){
     switch (concState){
-      case 0:
-        // ждем изменений
-        break;
       case 1: // открыта
         motor = 3; //остановить мотор
-        concState=0;
         break;
       case 2: // закрыта
         motor = 1; // включить мотор ВВЕРХ
-        concState=0;
         break;
       case 3: // промежуточное положение
         // ждем
-        concState=0;
         break;
       case 4: // неисправность
         motor = 3; //остановить мотор
-        concState=0;
         break;
     }
   }
   else { //open == false
     switch (concState){
-      case 0:
-        // ждем изменений
-        break;
       case 1: // открыта
         motor = 2; // включить мотор ВНИЗ
-        concState=0;
         break;
       case 2: // закрыта
-        motor = 3; // остановить мотор
-        concState=0;
+        // ждем
         break;
       case 3: // промежуточное положение
         motor = 2; // включить мотор ВНИЗ
-        concState=0;
         break;
       case 4: // неисправность
         motor = 3; // остановить мотор
-        concState=0;
         break;
     }
   }
