@@ -130,12 +130,14 @@ void loop()
       {
       case 1: // мотор - движится вверх
         motor = 2;
+        Serial.println("open, otkrita, motor up  : motor STOP");
         break;
       case 2: // мотор - остановлен
         // ждем
         break;
-      case 3: // мотор - движится вних
+      case 3: // мотор - движится вниз
         motor = 2;
+        Serial.println("open, otkrita, motor down  : motor STOP");
         break;
       case 4: // мотор - ошибка
         Serial.println("motor error o14");
@@ -151,9 +153,11 @@ void loop()
         break;
       case 2: // мотор - остановлен
         motor = 1;
+        Serial.println("open, promejutochnoe, motor stop  : motor UP");
         break;
       case 3: // мотор - движится вних
         motor = 2;
+        Serial.println("open, promejutochnoe, motor down  : motor STOP");
         break;
       case 4: // мотор - ошибка
         Serial.println("motor error o24");
@@ -169,9 +173,11 @@ void loop()
         break;
       case 2: // мотор - остановлен
         motor = 1;
+        Serial.println("open, zakrita, motor stop  : motor UP");
         break;
       case 3: // мотор - движится вних
         motor = 2;
+        Serial.println("open, zakrita, motor down  : motor STOP");
         break;
       case 4: // мотор - ошибка
         Serial.println("motor error o34");
@@ -195,9 +201,11 @@ void loop()
       {
       case 1: // мотор - движится вверх
         motor = 2;
+        Serial.println("close, otkrita, motor up  : motor STOP");
         break;
       case 2: // мотор - остановлен
         motor = 3;
+        Serial.println("close, otkrita, motor stop  : motor DOWN");
         break;
       case 3: // мотор - движится вних
         // ждем
@@ -213,9 +221,11 @@ void loop()
       {
       case 1: // мотор - движится вверх
         motor = 2;
+        Serial.println("close, promejutochnoe, motor up  : motor STOP");
         break;
       case 2: // мотор - остановлен
         motor = 2;
+        Serial.println("close, promejutochnoe, motor stop  : motor STOP");//?
         break;
       case 3: // мотор - движится вних
         // ждем
@@ -231,12 +241,14 @@ void loop()
       {
       case 1: // мотор - движится вверх
         motor = 2;
+        Serial.println("close, zakrita, motor up  : motor STOP");
         break;
       case 2: // мотор - остановлен
         // ждем
         break;
       case 3: // мотор - движится вних
         motor = 2;
+        Serial.println("close, zakrita, motor down  : motor STOP");
         break;
       case 4: // мотор - ошибка
         Serial.println("motor error c34");
