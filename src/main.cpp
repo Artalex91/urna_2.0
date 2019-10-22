@@ -27,6 +27,8 @@ VL53L0X sensor;
 #define concUpPin   7
 #define ledPin      13
 
+bool releUp             = LOW;
+bool releDown           = LOW;
 bool concDown           = LOW;
 bool concUp             = LOW;
 int concState           = 0;
@@ -34,7 +36,7 @@ int motorState          = 0;
 int motor               = 0;
 uint32_t releMill       = 0;
 bool releFlag           = false;
-#define constTimeMotorOff 1000
+#define constTimeMotorOff 1500
 bool protect            = false;
 uint32_t printMill      = 0;
 
@@ -82,6 +84,12 @@ void loop()
   // дальномер open/close
   if(millis()-printMill>2000){
     printMill=millis();
+    Serial.print("motorState-");
+    Serial.print(motorState);
+    Serial.print("||");
+    Serial.print("concState-");
+    Serial.print(concState);
+    Serial.print("||");
     Serial.print(sensor.readRangeSingleMillimeters());
     if (sensor.timeoutOccurred())
     {
@@ -110,15 +118,15 @@ void loop()
   concUp   = digitalRead(concUpPin);
 
        if (concDown == HIGH && concUp == LOW  && concState != 1) concState = 1; // открыта
-  else if (concDown == LOW  && concUp == HIGH && concState != 2) concState = 2; // промежуточное положение крышки
-  else if (concDown == HIGH && concUp == HIGH && concState != 3) concState = 3; // закрыта
+  else if (concDown == HIGH && concUp == HIGH && concState != 2) concState = 2; // промежуточное положение крышки
+  else if (concDown == LOW  && concUp == HIGH && concState != 3) concState = 3; // закрыта
   else if (concDown == LOW  && concUp == LOW  && concState != 4) concState = 4; // неисправность (оба концевика видят свое активное положение)
 
   // состояние мотора
-       if (releUpPin == HIGH && releDownPin == LOW  && motorState != 1) motorState = 1; //движение ВВЕРХ
-  else if (releUpPin == LOW  && releDownPin == HIGH && motorState != 2) motorState = 2; //ОСТАНОВЛЕН
-  else if (releUpPin == LOW  && releDownPin == LOW  && motorState != 3) motorState = 3; //движение ВНИЗ
-  else if (releUpPin == HIGH && releDownPin == HIGH && motorState != 4) motorState = 4; //ошибка
+       if (releUp == HIGH && releDown == LOW  && motorState != 1) motorState = 1; //движение ВВЕРХ
+  else if (releUp == LOW  && releDown == LOW  && motorState != 2) motorState = 2; //ОСТАНОВЛЕН
+  else if (releUp == LOW  && releDown == HIGH && motorState != 3) motorState = 3; //движение ВНИЗ
+  else if (releUp == HIGH && releDown == HIGH && motorState != 4) motorState = 4; //ошибка
 
   //конечный автомат
   if (open == true)
@@ -270,36 +278,42 @@ void loop()
     // ждем изменений
     break;
   case 1: // включить мотор вверх
-    if(protect==false) digitalWrite(releUpPin, HIGH);
-    else digitalWrite(releUpPin, LOW);
-    digitalWrite(releDownPin, LOW);
+    /*if(protect==false)*/ releUp = HIGH;
+    /*else releUp = LOW;*/
+    releDown = LOW;
     motor = 0;
     break;
   case 2: // ОСТАНОВИТЬ мотор
-    digitalWrite(releUpPin, LOW);
-    digitalWrite(releDownPin, LOW);
+    releUp = LOW;
+    releDown = LOW;
     motor = 0;
     break;
   case 3: // включить мотор вниз
-    digitalWrite(releUpPin, LOW);
-    if(protect==false) digitalWrite(releDownPin, HIGH);
-    else digitalWrite(releDownPin, LOW);
+    releUp = LOW;
+    /*if(protect==false)*/ releDown = HIGH;
+    /*else releDown = LOW;*/
     motor = 0;
     break;
   }
 
   // отсечка привода по времени (если концевик не сработал)
-  if (releUpPin == HIGH || releDownPin == HIGH){
+ /* if (releUp == HIGH || releDown == HIGH){
     if(releFlag != true){
       releFlag = true;
       releMill = millis();
       }
-  }
-  if (protect==false && releFlag==true && millis() - releMill > constTimeMotorOff){
-    digitalWrite(releUpPin, LOW);
-    digitalWrite(releDownPin, LOW);
+  }/*
+  
+ /* if (protect==false && releFlag==true && millis() - releMill > constTimeMotorOff){
+    releUp = LOW;
+    releDown = LOW;
     protect=true;
     Serial.print("PROTECT");
     digitalWrite(ledPin, HIGH);
-  }
+  }*/
+
+  digitalWrite(releUpPin, releUp);
+  digitalWrite(releDownPin, releDown);
+
+
 }
