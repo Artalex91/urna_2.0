@@ -36,6 +36,7 @@ uint32_t releMill       = 0;
 bool releFlag           = false;
 #define constTimeMotorOff 1000
 bool protect            = false;
+uint32_t printMill      = 0;
 
 int range               = 0;             //храним расстояние
 #define constRange        100     //мм  расстояние сработки
@@ -79,12 +80,15 @@ void setup()
 void loop()
 {
   // дальномер open/close
-  Serial.print(sensor.readRangeSingleMillimeters());
-  if (sensor.timeoutOccurred())
-  {
-    Serial.print(" TIMEOUT");
+  if(millis()-printMill>2000){
+    printMill=millis();
+    Serial.print(sensor.readRangeSingleMillimeters());
+    if (sensor.timeoutOccurred())
+    {
+      Serial.print(" TIMEOUT");
+    }
+    Serial.println();
   }
-  Serial.println();
 
   range = sensor.readRangeSingleMillimeters();
 
