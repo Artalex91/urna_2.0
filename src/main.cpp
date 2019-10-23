@@ -163,7 +163,7 @@ void loop()
         motor = 1;
         Serial.println("open, promejutochnoe, motor stop  : motor UP");
         break;
-      case 3: // мотор - движится вних
+      case 3: // мотор - движится вниз
         motor = 2;
         Serial.println("open, promejutochnoe, motor down  : motor STOP");
         break;
@@ -278,8 +278,8 @@ void loop()
     // ждем изменений
     break;
   case 1: // включить мотор вверх
-    /*if(protect==false)*/ releUp = HIGH;
-    /*else releUp = LOW;*/
+    if(protect==false) releUp = HIGH;
+    else releUp = LOW;
     releDown = LOW;
     motor = 0;
     break;
@@ -290,27 +290,33 @@ void loop()
     break;
   case 3: // включить мотор вниз
     releUp = LOW;
-    /*if(protect==false)*/ releDown = HIGH;
-    /*else releDown = LOW;*/
+    if(protect==false) releDown = HIGH;
+    else releDown = LOW;
     motor = 0;
     break;
   }
 
   // отсечка привода по времени (если концевик не сработал)
- /* if (releUp == HIGH || releDown == HIGH){
+  if (releUp == HIGH || releDown == HIGH){
     if(releFlag != true){
       releFlag = true;
       releMill = millis();
       }
-  }/*
+  }
+
+  if(releUp == LOW && releDown == LOW){
+    if(protect==false){
+      releFlag=false;
+    }
+  }
   
- /* if (protect==false && releFlag==true && millis() - releMill > constTimeMotorOff){
+  if (protect==false && releFlag==true && millis() - releMill > constTimeMotorOff){
     releUp = LOW;
     releDown = LOW;
     protect=true;
     Serial.print("PROTECT");
     digitalWrite(ledPin, HIGH);
-  }*/
+  }
 
   digitalWrite(releUpPin, releUp);
   digitalWrite(releDownPin, releDown);
