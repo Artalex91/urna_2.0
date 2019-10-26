@@ -1,4 +1,4 @@
-// Urna 2.0
+// Urna 3.0
 #include <Arduino.h>
 
 #include <Wire.h>
@@ -27,24 +27,21 @@ VL53L0X sensor;
 #define concUpPin   7
 #define ledPin      13
 
-bool releUp             = LOW;
-bool releDown           = LOW;
-bool concDown           = LOW;
-bool concUp             = LOW;
-int concState           = 0;
-int motorState          = 0;
-int motor               = 0;
-uint32_t releMill       = 0;
-bool releFlag           = false;
-#define constTimeMotorOff 1500
-bool protect            = false;
-uint32_t printMill      = 0;
+uint32_t printMill = 0;
+int range = 0;
+const int constRange = 550;//mm
+uint32_t openMill = 0;
+bool open1 = false;
+const int constOpenMill = 5000;// millisecond open state
+bool releUp = false;
+bool releDown = false;
+bool concDown=false;
+bool concUp=false;
 
-int range               = 0;             //храним расстояние
-#define constRange        100     //мм  расстояние сработки
-bool open               = false;         // состояние крышки
-uint32_t openMill       = 0;     //счетчик открытой крышки
-#define constOpenMill     4000 //мс задержка в открытом состоянии
+uint32_t releMill = 0;
+bool protect = false;
+
+
 
 void setup()
 {
@@ -75,8 +72,9 @@ void setup()
   pinMode(releDownPin, OUTPUT);
   pinMode(ledPin,      OUTPUT);
 
-  pinMode(concDownPin, INPUT);
-  pinMode(concUpPin,   INPUT);
+
+  pinMode(concDownPin, INPUT_PULLUP);
+  pinMode(concUpPin,   INPUT_PULLUP);
 }
 
 void loop()
@@ -84,12 +82,7 @@ void loop()
   // дальномер open/close
   if(millis()-printMill>2000){
     printMill=millis();
-    Serial.print("motorState-");
-    Serial.print(motorState);
-    Serial.print("||");
-    Serial.print("concState-");
-    Serial.print(concState);
-    Serial.print("||");
+Serial.print(" T");
     Serial.print(sensor.readRangeSingleMillimeters());
     if (sensor.timeoutOccurred())
     {
@@ -102,224 +95,51 @@ void loop()
 
   if (range < constRange)
     openMill = millis();
-  if (range < constRange && open != true)
+  if (range < constRange && open1 != true)
   {
-    open = true;
+    open1 = true;
   }
-  else if (range >= constRange && open != false)
+  else if (range >= constRange && open1 != false)
   {
     if (millis() - openMill > constOpenMill)
     {
-      open = false;
+      open1 = false;
     }
   }
   // концевики (состояния крышки)
   concDown = digitalRead(concDownPin);
   concUp   = digitalRead(concUpPin);
 
-       if (concDown == HIGH && concUp == LOW  && concState != 1) concState = 1; // открыта
-  else if (concDown == HIGH && concUp == HIGH && concState != 2) concState = 2; // промежуточное положение крышки
-  else if (concDown == LOW  && concUp == HIGH && concState != 3) concState = 3; // закрыта
-  else if (concDown == LOW  && concUp == LOW  && concState != 4) concState = 4; // неисправность (оба концевика видят свое активное положение)
-
-  // состояние мотора
-       if (releUp == HIGH && releDown == LOW  && motorState != 1) motorState = 1; //движение ВВЕРХ
-  else if (releUp == LOW  && releDown == LOW  && motorState != 2) motorState = 2; //ОСТАНОВЛЕН
-  else if (releUp == LOW  && releDown == HIGH && motorState != 3) motorState = 3; //движение ВНИЗ
-  else if (releUp == HIGH && releDown == HIGH && motorState != 4) motorState = 4; //ошибка
-
-  //конечный автомат
-  if (open == true)
-  {
-    switch (concState)
-    {
-    case 1: // концевик - открыта
-      switch (motorState)
-      {
-      case 1: // мотор - движится вверх
-        motor = 2;
-        Serial.println("open, otkrita, motor up  : motor STOP");
-        break;
-      case 2: // мотор - остановлен
-        // ждем
-        break;
-      case 3: // мотор - движится вниз
-        motor = 2;
-        Serial.println("open, otkrita, motor down  : motor STOP");
-        break;
-      case 4: // мотор - ошибка
-        Serial.println("motor error o14");
-        motor = 2;
-        break;
-      }
-      break;
-    case 2: // концевик - Промежуточное положение
-      switch (motorState)
-      {
-      case 1: // мотор - движится вверх
-        // ждем
-        break;
-      case 2: // мотор - остановлен
-        motor = 1;
-        Serial.println("open, promejutochnoe, motor stop  : motor UP");
-        break;
-      case 3: // мотор - движится вниз
-        motor = 2;
-        Serial.println("open, promejutochnoe, motor down  : motor STOP");
-        break;
-      case 4: // мотор - ошибка
-        Serial.println("motor error o24");
-        motor = 2;
-        break;
-      }
-      break;
-    case 3: // концевик - закрыта
-      switch (motorState)
-      {
-      case 1: // мотор - движится вверх
-        //ждем
-        break;
-      case 2: // мотор - остановлен
-        motor = 1;
-        Serial.println("open, zakrita, motor stop  : motor UP");
-        break;
-      case 3: // мотор - движится вних
-        motor = 2;
-        Serial.println("open, zakrita, motor down  : motor STOP");
-        break;
-      case 4: // мотор - ошибка
-        Serial.println("motor error o34");
-        motor = 2;
-        break;
-      }
-      break;
-    case 4: //концевик - неисправность
-      Serial.println("conc error o4");
-      motor = 2;
-      break;
+  if(open1==true && protect==false){
+         if(                 concUp==HIGH) {releDown=LOW; releUp=HIGH;}
+    else if(                 concUp==LOW ) {releDown=LOW; releUp=LOW;}
     }
-  }
-
-  else
-  { //open == false
-    switch (concState)
-    {
-    case 1: // концевик - открыта
-      switch (motorState)
-      {
-      case 1: // мотор - движится вверх
-        motor = 2;
-        Serial.println("close, otkrita, motor up  : motor STOP");
-        break;
-      case 2: // мотор - остановлен
-        motor = 3;
-        Serial.println("close, otkrita, motor stop  : motor DOWN");
-        break;
-      case 3: // мотор - движится вних
-        // ждем
-        break;
-      case 4: // мотор - ошибка
-        Serial.println("motor error c14");
-        motor = 2;
-        break;
-      }
-      break;
-    case 2: // концевик - Промежуточное положение
-      switch (motorState)
-      {
-      case 1: // мотор - движится вверх
-        motor = 2;
-        Serial.println("close, promejutochnoe, motor up  : motor STOP");
-        break;
-      case 2: // мотор - остановлен
-        motor = 2;
-        Serial.println("close, promejutochnoe, motor stop  : motor STOP");//?
-        break;
-      case 3: // мотор - движится вних
-        // ждем
-        break;
-      case 4: // мотор - ошибка
-        Serial.println("motor error c24");
-        motor = 2;
-        break;
-      }
-      break;
-    case 3: // концевик - закрыта
-      switch (motorState)
-      {
-      case 1: // мотор - движится вверх
-        motor = 2;
-        Serial.println("close, zakrita, motor up  : motor STOP");
-        break;
-      case 2: // мотор - остановлен
-        // ждем
-        break;
-      case 3: // мотор - движится вних
-        motor = 2;
-        Serial.println("close, zakrita, motor down  : motor STOP");
-        break;
-      case 4: // мотор - ошибка
-        Serial.println("motor error c34");
-        motor = 2;
-        break;
-      }
-      break;
-    case 4: //концевик - неисправность
-      Serial.println("conc error c4");
-      motor = 2;
-      break;
+  else if (open1==false  && protect==false){
+         if(concDown==HIGH               ) {releDown=HIGH; releUp=LOW;}
+    else if(concDown==LOW                ) {releDown=LOW;  releUp=LOW;}
     }
+
+if(releDown==HIGH && digitalRead(concDownPin)==LOW){
+  releDown=LOW;
+  digitalWrite(releDownPin, LOW);
   }
 
-  // вкл/выкл привод
-  switch (motor)
-  {
-  case 0:
-    // ждем изменений
-    break;
-  case 1: // включить мотор вверх
-    if(protect==false) releUp = HIGH;
-    else releUp = LOW;
-    releDown = LOW;
-    motor = 0;
-    break;
-  case 2: // ОСТАНОВИТЬ мотор
-    releUp = LOW;
-    releDown = LOW;
-    motor = 0;
-    break;
-  case 3: // включить мотор вниз
-    releUp = LOW;
-    if(protect==false) releDown = HIGH;
-    else releDown = LOW;
-    motor = 0;
-    break;
+if(releUp==HIGH && digitalRead(concUpPin)==LOW){
+  releUp=LOW;
+  digitalWrite(releUpPin, LOW);
   }
 
-  // отсечка привода по времени (если концевик не сработал)
-  if (releUp == HIGH || releDown == HIGH){
-    if(releFlag != true){
-      releFlag = true;
-      releMill = millis();
-      }
-  }
-
-  if(releUp == LOW && releDown == LOW){
-    if(protect==false){
-      releFlag=false;
+    
+  if(releUp==LOW && releDown==LOW){
+    releMill=millis();
     }
-  }
-  
-  if (protect==false && releFlag==true && millis() - releMill > constTimeMotorOff){
-    releUp = LOW;
-    releDown = LOW;
+  if(millis()-releMill>1500){
     protect=true;
-    Serial.print("PROTECT");
-    digitalWrite(ledPin, HIGH);
-  }
-
+    releUp=LOW;
+    releDown=LOW;
+    
+    }
+  digitalWrite(ledPin, protect);  
   digitalWrite(releUpPin, releUp);
   digitalWrite(releDownPin, releDown);
-
-
-}
+  }
