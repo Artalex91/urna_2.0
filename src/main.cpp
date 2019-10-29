@@ -1,5 +1,6 @@
 // Urna 3.0
 #include <Arduino.h>
+#include <avr/wdt.h>
 
 #include <Wire.h>
 #include <VL53L0X.h>
@@ -45,6 +46,10 @@ bool protect = false;
 
 void setup()
 {
+  wdt_disable(); 
+    delay(3000); // Задержка, чтобы было время перепрошить устройство в случае bootloop
+    wdt_enable (WDTO_2S); // Для тестов не рекомендуется устанавливать значение менее 8 сек.
+  
   Serial.begin(9600);
   Wire.begin();
   //дальномер
@@ -80,9 +85,8 @@ void setup()
 void loop()
 {
   // дальномер open/close
-  if(millis()-printMill>2000){
+  if(millis()-printMill>1000){
     printMill=millis();
-Serial.print(" T");
     Serial.print(sensor.readRangeSingleMillimeters());
     if (sensor.timeoutOccurred())
     {
@@ -132,6 +136,7 @@ if(releUp==HIGH && digitalRead(concUpPin)==LOW){
     
   if(releUp==LOW && releDown==LOW){
     releMill=millis();
+    wdt_reset();
     }
   if(millis()-releMill>1500){
     protect=true;
