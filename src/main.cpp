@@ -46,11 +46,13 @@ bool protect = false;
 
 void setup()
 {
+   Serial.begin(9600);
+   Serial.println(" setup");
   wdt_disable(); 
     delay(3000); // Задержка, чтобы было время перепрошить устройство в случае bootloop
-    wdt_enable (WDTO_2S); // Для тестов не рекомендуется устанавливать значение менее 8 сек.
+    wdt_enable (WDTO_500MS); // Для тестов не рекомендуется устанавливать значение менее 8 сек.
   
-  Serial.begin(9600);
+ 
   Wire.begin();
   //дальномер
   sensor.init();
@@ -80,6 +82,15 @@ void setup()
 
   pinMode(concDownPin, INPUT_PULLUP);
   pinMode(concUpPin,   INPUT_PULLUP);
+
+  if(digitalRead(concUpPin)==HIGH && digitalRead(concDownPin)==HIGH){
+    digitalWrite(releUpPin, HIGH);
+    delay(100);
+    }
+
+    releMill=millis();
+    
+  
 }
 
 void loop()
@@ -136,9 +147,9 @@ if(releUp==HIGH && digitalRead(concUpPin)==LOW){
     
   if(releUp==LOW && releDown==LOW){
     releMill=millis();
-    wdt_reset();
+    
     }
-  if(millis()-releMill>1500){
+  if(millis()-releMill>1900){
     protect=true;
     releUp=LOW;
     releDown=LOW;
@@ -147,4 +158,5 @@ if(releUp==HIGH && digitalRead(concUpPin)==LOW){
   digitalWrite(ledPin, protect);  
   digitalWrite(releUpPin, releUp);
   digitalWrite(releDownPin, releDown);
+  wdt_reset();
   }
